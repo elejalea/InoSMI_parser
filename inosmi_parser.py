@@ -18,14 +18,13 @@ import unicodedata
 
 # Константы
 URL = 'https://inosmi.ru'
-# Заводим словарь для пополнения в дальнейшем ссылками на другие оригинальные издания
+#
 PAPER_ORIGINAL_LINKS_PREFIX = {'yle_fi': 'https://yle.fi/'}
 # Пауза, чтобы не забрасывать сайт запросами
 PAUSE_SEC = 2
-# Ключевые слова "Читать также по теме" в оригинальной статье, по которым обрезаем  
+# Ключевые слова
 READ_NEXT_WORDS = ['Lue myös:', 'Lue myös', 'Lue lisää:', 'Lisää aiheesta:', 'Lue lisää aiheesta:']
 METADATA_FILENAME = 'metadata.csv'
-# Разделитель в csv
 DELIMITER = ';'
 # Ссылка на источник оригинала в переводе перед заголовком
 YLE_FI_PREFIX = 'Yle (Финляндия): '
@@ -100,9 +99,9 @@ def parse_article(article_link, paper_name):
             article_disclaimer.extract()
         article_text = ''
         for article_p in article_body.find_all('p'):
-            # В верстке содержится выносной абзац "Контекст", его содержимое мы пропускаем
-            if not is_aside_paragraph(article_p):
-                article_text += '\r\n' + article_p.text.strip()
+            # В верстке содержится выносной абзац "Контекст" и внутренние подзаголовки, их пропускаем
+            if not is_aside_paragraph(article_p) and not is_subtitle(article_p):
+                    article_text += '\r\n' + article_p.text.strip()
         # Удаляем лишние пробелы и преобразуем HTML entities в символы юникода
         article_text = unicodedata.normalize("NFKD", article_text.strip())
         article_data_rus['article_text'] = article_text
@@ -181,7 +180,7 @@ def parse_original_article(article_data_original):
         traceback.print_exc()
         article_data_original['is_good'] = False
 
-# Изменяем формат даты в оригинальной статье, содержавший время публикации
+# изменяем формат даты в оригинальной статье, содержавший время публикации
 def normalize_yle_fi_date(original_date):
     norm_orig_date = original_date.split(' ')[0]
     return norm_orig_date
@@ -235,6 +234,10 @@ def is_good_link(article_link, paper_name):
 # Является ли текст выносным абзацем "Контекст"
 def is_aside_paragraph(p):
     return p.find('aside') is not None
+
+# Является ли текст жирным подзаголовком
+def is_subtitle(p):
+    return p.find('strong') is not None
 
 def parse_inosmi_article_page(all_articles_url, paper_name):
     print('parsing ' + all_articles_url)
